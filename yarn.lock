@@ -2175,12 +2175,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@safe-global/safe-deployments@npm:^1.37.18":
-  version: 1.37.18
-  resolution: "@safe-global/safe-deployments@npm:1.37.18"
+"@safe-global/safe-deployments@https://github.com/weequan93/safe-deployments.git#deriw-dev":
+  version: 1.37.19
+  resolution: "@safe-global/safe-deployments@https://github.com/weequan93/safe-deployments.git#commit=c29da8ae3a1285f587b91d1d56605f0d2ee6d612"
   dependencies:
     semver: "npm:^7.6.2"
-  checksum: 10/1e273eb1219956b7902c64ccbcf878369d5d095e51830dc633672cac6db30e5f09a8d8f81f6924fdad13cb0ad1706ea346f00cc10e84df2a0bff5933edcfa566
+  checksum: 10/f700aacd039a44b99582f93c6ab04eace012a1d90c4dd3f7e9e5fc87dfe2b40faf0e0739c687002bdd40a7744521703f92323f8989c1a8f148530a2bde425d06
   languageName: node
   linkType: hard
 
@@ -8400,7 +8400,7 @@ __metadata:
     "@nestjs/swagger": "npm:^8.0.7"
     "@nestjs/testing": "npm:^10.4.12"
     "@nestjs/typeorm": "npm:^10.0.2"
-    "@safe-global/safe-deployments": "npm:^1.37.18"
+    "@safe-global/safe-deployments": "https://github.com/weequan93/safe-deployments.git#deriw-dev"
     "@smithy/util-stream": "npm:^3.3.1"
     "@types/amqplib": "npm:^0"
     "@types/cookie-parser": "npm:^1.4.7"

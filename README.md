@@ -95,3 +95,12 @@ These checks can be automatically executed using Git hooks. If you wish to insta
 yarn install
 yarn husky install
 ```
+
+# Deriw Release 
+
+```shell
+yarn generate-abis 
+yarn run build  
+docker build --platform=linux/amd64 -t quanquanah/deriw-safeglobal-safe-client-gateway:dev .
+docker push quanquanah/deriw-safeglobal-safe-client-gateway:dev
+```

@@ -2177,10 +2177,10 @@ __metadata:
 
 "@safe-global/safe-deployments@https://github.com/weequan93/safe-deployments.git#deriw-dev":
   version: 1.37.19
-  resolution: "@safe-global/safe-deployments@https://github.com/weequan93/safe-deployments.git#commit=c29da8ae3a1285f587b91d1d56605f0d2ee6d612"
+  resolution: "@safe-global/safe-deployments@https://github.com/weequan93/safe-deployments.git#commit=f5a303a1579d7f0bbd4ee756d4441d4a0f376315"
   dependencies:
     semver: "npm:^7.6.2"
-  checksum: 10/f700aacd039a44b99582f93c6ab04eace012a1d90c4dd3f7e9e5fc87dfe2b40faf0e0739c687002bdd40a7744521703f92323f8989c1a8f148530a2bde425d06
+  checksum: 10/8f7b82d55d44a5275c937a3d94da7a2f4c703872ea4831c9e527717d5d8de091379812f4a0c5b784693c3bf99636d4e23ac0aa9076eaaf49da80c03647846899
   languageName: node
   linkType: hard
 

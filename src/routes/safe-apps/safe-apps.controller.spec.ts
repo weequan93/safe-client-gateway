@@ -119,7 +119,7 @@ describe('Safe Apps Controller (Unit)', () => {
               type: 'DOMAIN_ALLOWLIST',
               value: (
                 safeAppsResponse[0].accessControl as {
-                  value: string[] | null;
+                  value: Array<string> | null;
                   type: SafeAppAccessControlPolicies.DomainAllowlist;
                 }
               ).value,
@@ -229,11 +229,8 @@ describe('Safe Apps Controller (Unit)', () => {
 
       await request(app.getHttpServer())
         .get(`/v1/chains/${chain.chainId}/safe-apps`)
-        .expect(500)
-        .expect({
-          statusCode: 500,
-          message: 'Internal server error',
-        });
+        .expect(502)
+        .expect({ statusCode: 502, message: 'Bad gateway' });
     });
   });
 });

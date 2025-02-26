@@ -79,6 +79,45 @@ describe('TargetedMessagingController', () => {
     await app.close();
   });
 
+  describe('GET targeted Safe', () => {
+    it('should get a targeted Safe', async () => {
+      const outreachId = faker.number.int();
+      const chain = chainBuilder().build();
+      const safe = safeBuilder().build();
+      const targetedSafe = targetedSafeBuilder()
+        .with('address', safe.address)
+        .build();
+      targetedMessagingDatasource.getTargetedSafe.mockResolvedValue(
+        targetedSafe,
+      );
+
+      await request(app.getHttpServer())
+        .get(
+          `/v1/targeted-messaging/outreaches/${outreachId}/chains/${chain.chainId}/safes/${safe.address}`,
+        )
+        .expect(200)
+        .expect({
+          outreachId: targetedSafe.outreachId,
+          address: targetedSafe.address,
+        });
+    });
+
+    it('should return 404 Not Found if the Safe is not targeted', async () => {
+      const outreachId = faker.number.int();
+      const chain = chainBuilder().build();
+      const safe = safeBuilder().build();
+      targetedMessagingDatasource.getTargetedSafe.mockRejectedValue(
+        new TargetedSafeNotFoundError(),
+      );
+
+      await request(app.getHttpServer())
+        .get(
+          `/v1/targeted-messaging/outreaches/${outreachId}/chains/${chain.chainId}/safes/${safe.address}`,
+        )
+        .expect(404);
+    });
+  });
+
   describe('GET submissions', () => {
     it('should get a completed submission', async () => {
       const outreachId = faker.number.int();
@@ -318,6 +357,77 @@ describe('TargetedMessagingController', () => {
         });
     });
 
+    it('should create a submission for a campaign targeting all Safes', async () => {
+      const outreachId = faker.number.int();
+      const chain = chainBuilder().build();
+      const submission = submissionBuilder().build();
+      const safe = safeBuilder()
+        .with('owners', [
+          getAddress(faker.finance.ethereumAddress()),
+          submission.signerAddress,
+        ])
+        .build();
+      const targetedSafe = targetedSafeBuilder()
+        .with('address', safe.address)
+        .build();
+      targetedMessagingDatasource.getTargetedSafe.mockRejectedValue(
+        new TargetedSafeNotFoundError(),
+      );
+      targetedMessagingDatasource.createTargetedSafes.mockResolvedValueOnce([
+        targetedSafe,
+      ]);
+      targetedMessagingDatasource.getSubmission.mockRejectedValue(
+        new SubmissionNotFoundError(),
+      );
+      targetedMessagingDatasource.createSubmission.mockResolvedValueOnce(
+        submission,
+      );
+      targetedMessagingDatasource.getOutreachOrFail.mockResolvedValue({
+        id: expect.any(Number),
+        created_at: expect.any(Date),
+        updated_at: expect.any(Date),
+        type: expect.any(String),
+        name: expect.any(String),
+        startDate: expect.any(Date),
+        endDate: expect.any(Date),
+        sourceId: expect.any(Number),
+        teamName: expect.any(String),
+        sourceFile: null,
+        sourceFileProcessedDate: null,
+        sourceFileChecksum: null,
+        targetAll: true,
+      });
+
+      networkService.get.mockImplementation(({ url }) => {
+        switch (url) {
+          case `${safeConfigUrl}/api/v1/chains/${chain.chainId}`:
+            return Promise.resolve({ data: rawify(chain), status: 200 });
+          case `${chain.transactionService}/api/v1/safes/${safe.address}`:
+            return Promise.resolve({
+              data: rawify(safe),
+              status: 200,
+            });
+          default:
+            return Promise.reject(new Error(`Could not match ${url}`));
+        }
+      });
+
+      await request(app.getHttpServer())
+        .post(
+          `/v1/targeted-messaging/outreaches/${outreachId}/chains/${chain.chainId}/safes/${safe.address}/signers/${submission.signerAddress}/submissions`,
+        )
+        .send({ completed: true })
+        .expect(201)
+        .expect(({ body }) => {
+          expect(body).toEqual({
+            outreachId,
+            targetedSafeId: submission.targetedSafeId,
+            signerAddress: submission.signerAddress,
+            completionDate: submission.completionDate.toISOString(),
+          });
+        });
+    });
+
     it('should return 422 Unprocessable Entity if payload is not well-formed', async () => {
       const outreachId = faker.number.int();
       const chain = chainBuilder().build();
@@ -445,6 +555,21 @@ describe('TargetedMessagingController', () => {
       targetedMessagingDatasource.getTargetedSafe.mockRejectedValue(
         new TargetedSafeNotFoundError(),
       );
+      targetedMessagingDatasource.getOutreachOrFail.mockResolvedValue({
+        id: expect.any(Number),
+        created_at: expect.any(Date),
+        updated_at: expect.any(Date),
+        type: expect.any(String),
+        name: expect.any(String),
+        startDate: expect.any(Date),
+        endDate: expect.any(Date),
+        sourceId: expect.any(Number),
+        teamName: expect.any(String),
+        sourceFile: null,
+        sourceFileProcessedDate: null,
+        sourceFileChecksum: null,
+        targetAll: false,
+      });
 
       await request(app.getHttpServer())
         .post(

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { isEmpty } from 'lodash';
+import isEmpty from 'lodash/isEmpty';
 import { Page } from '@/domain/entities/page.entity';
 import { ITransactionApiManager } from '@/domain/interfaces/transaction-api.manager.interface';
 import { CreationTransaction } from '@/domain/safe/entities/creation-transaction.entity';
@@ -31,6 +31,7 @@ import { IChainsRepository } from '@/domain/chains/chains.repository.interface';
 import { CreationTransactionSchema } from '@/domain/safe/entities/schemas/creation-transaction.schema';
 import { SafeSchema } from '@/domain/safe/entities/schemas/safe.schema';
 import { z } from 'zod';
+import { TransactionVerifierHelper } from '@/routes/transactions/helpers/transaction-verifier.helper';
 
 @Injectable()
 export class SafeRepository implements ISafeRepository {
@@ -40,6 +41,7 @@ export class SafeRepository implements ISafeRepository {
     @Inject(LoggingService) private readonly loggingService: ILoggingService,
     @Inject(IChainsRepository)
     private readonly chainsRepository: IChainsRepository,
+    private readonly transactionVerifier: TransactionVerifierHelper,
   ) {}
 
   async getSafe(args: {
@@ -162,6 +164,7 @@ export class SafeRepository implements ISafeRepository {
     const transactionService = await this.transactionApiManager.getApi(
       args.chainId,
     );
+
     await transactionService.postConfirmation(args);
   }
 
@@ -423,7 +426,9 @@ export class SafeRepository implements ISafeRepository {
     return SafeListSchema.parse(safeList);
   }
 
-  async getAllSafesByOwner(args: {
+  // TODO: Remove with /owners/:ownerAddress/safes
+  // @deprecated
+  async deprecated__getAllSafesByOwner(args: {
     ownerAddress: `0x${string}`;
   }): Promise<{ [chainId: string]: Array<string> }> {
     const chains = await this.chainsRepository.getAllChains();
@@ -449,6 +454,42 @@ export class SafeRepository implements ISafeRepository {
     }, {});
   }
 
+  async getAllSafesByOwner(args: {
+    ownerAddress: `0x${string}`;
+  }): Promise<{ [chainId: string]: Array<string> | null }> {
+    const chains = await this.chainsRepository.getAllChains();
+    const allSafeLists = await Promise.allSettled(
+      chains.map(async ({ chainId }) => {
+        const safeList = await this.getSafesByOwner({
+          chainId,
+          ownerAddress: args.ownerAddress,
+        });
+
+        return {
+          chainId,
+          safeList,
+        };
+      }),
+    );
+
+    const result: { [chainId: string]: Array<string> | null } = {};
+
+    for (const [index, allSafeList] of allSafeLists.entries()) {
+      const chainId = chains[index].chainId;
+
+      if (allSafeList.status === 'fulfilled') {
+        result[chainId] = allSafeList.value.safeList.safes;
+      } else {
+        result[chainId] = null;
+        this.loggingService.warn(
+          `Failed to fetch Safe owners. chainId=${chainId}`,
+        );
+      }
+    }
+
+    return result;
+  }
+
   async getLastTransactionSortedByNonce(args: {
     chainId: string;
     safeAddress: `0x${string}`;
@@ -464,9 +505,7 @@ export class SafeRepository implements ISafeRepository {
     });
     const { results } = MultisigTransactionPageSchema.parse(page);
 
-    return isEmpty(results)
-      ? null
-      : MultisigTransactionSchema.parse(results[0]);
+    return isEmpty(results) ? null : results[0];
   }
 
   async proposeTransaction(args: {
@@ -477,6 +516,17 @@ export class SafeRepository implements ISafeRepository {
     const transactionService = await this.transactionApiManager.getApi(
       args.chainId,
     );
+
+    const safe = await this.getSafe({
+      chainId: args.chainId,
+      address: args.safeAddress,
+    });
+
+    await this.transactionVerifier.verifyProposal({
+      chainId: args.chainId,
+      safe,
+      proposal: args.proposeTransactionDto,
+    });
 
     return transactionService.postMultisigTransaction({
       address: args.safeAddress,

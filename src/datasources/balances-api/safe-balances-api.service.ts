@@ -16,6 +16,7 @@ import { Injectable } from '@nestjs/common';
 import { Chain } from '@/domain/chains/entities/chain.entity';
 import { rawify, type Raw } from '@/validation/entities/raw.entity';
 import { AssetPricesSchema } from '@/datasources/balances-api/entities/asset-price.entity';
+import { ZodError } from 'zod';
 
 @Injectable()
 export class SafeBalancesApi implements IBalancesApi {
@@ -59,7 +60,7 @@ export class SafeBalancesApi implements IBalancesApi {
     chain: Chain;
     trusted?: boolean;
     excludeSpam?: boolean;
-  }): Promise<Raw<Balance[]>> {
+  }): Promise<Raw<Array<Balance>>> {
     try {
       const cacheDir = CacheRouter.getBalancesCacheDir({
         chainId: this.chainId,
@@ -67,7 +68,7 @@ export class SafeBalancesApi implements IBalancesApi {
       });
       const url = `${this.baseUrl}/api/v1/safes/${args.safeAddress}/balances/`;
       const data = await this.dataSource
-        .get<Balance[]>({
+        .get<Array<Balance>>({
           cacheDir,
           url,
           notFoundExpireTimeSeconds: this.defaultNotFoundExpirationTimeSeconds,
@@ -87,6 +88,9 @@ export class SafeBalancesApi implements IBalancesApi {
         chain: args.chain,
       });
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
       throw this.httpErrorFactory.from(error);
     }
   }
@@ -139,7 +143,7 @@ export class SafeBalancesApi implements IBalancesApi {
     await this.cacheService.deleteByKey(key);
   }
 
-  async getFiatCodes(): Promise<Raw<string[]>> {
+  async getFiatCodes(): Promise<Raw<Array<string>>> {
     return this.coingeckoApi.getFiatCodes();
   }
 
@@ -154,10 +158,10 @@ export class SafeBalancesApi implements IBalancesApi {
   }
 
   private async _mapBalances(args: {
-    balances: Balance[];
+    balances: Array<Balance>;
     fiatCode: string;
     chain: Chain;
-  }): Promise<Raw<Balance[]>> {
+  }): Promise<Raw<Array<Balance>>> {
     const tokenAddresses = args.balances
       .map((balance) => balance.tokenAddress)
       .filter((address): address is `0x${string}` => address !== null);

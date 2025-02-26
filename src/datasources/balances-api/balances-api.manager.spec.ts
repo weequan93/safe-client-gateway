@@ -9,7 +9,7 @@ import type { IConfigApi } from '@/domain/interfaces/config-api.interface';
 import type { IPricesApi } from '@/datasources/balances-api/prices-api.interface';
 import { faker } from '@faker-js/faker';
 import { getAddress } from 'viem';
-import { sample } from 'lodash';
+import sample from 'lodash/sample';
 import type { ITransactionApiManager } from '@/domain/interfaces/transaction-api.manager.interface';
 import type { ITransactionApi } from '@/domain/interfaces/transaction-api.interface';
 import { rawify } from '@/validation/entities/raw.entity';
@@ -63,7 +63,7 @@ const coingeckoApi = {
 } as IPricesApi;
 
 const coingeckoApiMock = jest.mocked(coingeckoApi);
-const ZERION_BALANCES_CHAIN_IDS: string[] = faker.helpers.multiple(
+const ZERION_BALANCES_CHAIN_IDS: Array<string> = faker.helpers.multiple(
   () => faker.string.numeric(),
   { count: { min: 1, max: 10 } },
 );

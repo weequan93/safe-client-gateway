@@ -120,7 +120,8 @@ export default (): ReturnType<typeof configuration> => ({
           enabled: true,
           requestCert: true,
           rejectUnauthorized: true,
-          caPath: process.env.POSTGRES_SSL_CA_PATH,
+          caPath:
+            process.env.POSTGRES_SSL_CA_PATH || 'db_config/test/server.crt',
         },
       },
     },
@@ -154,8 +155,18 @@ export default (): ReturnType<typeof configuration> => ({
     delegatesV2: false,
     counterfactualBalances: false,
     accounts: false,
+    users: false,
     pushNotifications: false,
+    hookHttpPostEvent: false,
     improvedAddressPoisoning: false,
+    signatureVerification: {
+      api: true,
+      proposal: true,
+    },
+    hashVerification: {
+      api: true,
+      proposal: true,
+    },
   },
   httpClient: { requestTimeout: faker.number.int() },
   locking: {
@@ -175,6 +186,7 @@ export default (): ReturnType<typeof configuration> => ({
   log: {
     level: 'debug',
     silent: process.env.LOG_SILENT?.toLowerCase() === 'true',
+    prettyColorize: process.env.LOG_PRETTY_COLORIZE?.toLowerCase() === 'true',
   },
   mappings: {
     imitation: {
@@ -194,6 +206,10 @@ export default (): ReturnType<typeof configuration> => ({
   owners: {
     ownersTtlSeconds: faker.number.int(),
   },
+  portfolio: {
+    baseUri: faker.internet.url({ appendSlash: false }),
+    apiKey: faker.string.hexadecimal({ length: 32 }),
+  },
   pushNotifications: {
     baseUri: faker.internet.url({ appendSlash: false }),
     project: faker.word.noun(),
@@ -203,8 +219,13 @@ export default (): ReturnType<typeof configuration> => ({
     },
   },
   redis: {
+    user: process.env.REDIS_USER,
+    pass: process.env.REDIS_PASS,
     host: process.env.REDIS_HOST || 'localhost',
     port: process.env.REDIS_PORT || '6379',
+    timeout: process.env.REDIS_TIMEOUT || 1 * 1_000, // Milliseconds
+    disableOfflineQueue:
+      process.env.REDIS_DISABLE_OFFLINE_QUEUE?.toString() === 'true',
   },
   relay: {
     baseUri: faker.internet.url({ appendSlash: false }),
@@ -250,6 +271,7 @@ export default (): ReturnType<typeof configuration> => ({
     api: {
       1: faker.internet.url({ appendSlash: false }),
       100: faker.internet.url({ appendSlash: false }),
+      8453: faker.internet.url({ appendSlash: false }),
       42161: faker.internet.url({ appendSlash: false }),
       11155111: faker.internet.url({ appendSlash: false }),
     },
@@ -269,5 +291,8 @@ export default (): ReturnType<typeof configuration> => ({
         baseDir: 'assets/targeted-messaging',
       },
     },
+  },
+  users: {
+    maxInvites: faker.number.int({ min: 5, max: 10 }),
   },
 });

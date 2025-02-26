@@ -9,7 +9,7 @@ import type { INetworkService } from '@/datasources/network/network.service.inte
 import type { Backbone } from '@/domain/backbone/entities/backbone.entity';
 import type { Singleton } from '@/domain/chains/entities/singleton.entity';
 import type { Contract } from '@/domain/contracts/entities/contract.entity';
-import type { DataDecoded } from '@/domain/data-decoder/entities/data-decoded.entity';
+import type { DataDecoded } from '@/domain/data-decoder/v1/entities/data-decoded.entity';
 import type { Delegate } from '@/domain/delegate/entities/delegate.entity';
 import type { Page } from '@/domain/entities/page.entity';
 import type { Estimation } from '@/domain/estimations/entities/estimation.entity';
@@ -30,7 +30,7 @@ import type { AddConfirmationDto } from '@/domain/transactions/entities/add-conf
 import type { ProposeTransactionDto } from '@/domain/transactions/entities/propose-transaction.dto.entity';
 import type { ILoggingService } from '@/logging/logging.interface';
 import type { Raw } from '@/validation/entities/raw.entity';
-import { get } from 'lodash';
+import get from 'lodash/get';
 
 export class TransactionApi implements ITransactionApi {
   private static readonly ERROR_ARRAY_PATH = 'nonFieldErrors';
@@ -131,11 +131,11 @@ export class TransactionApi implements ITransactionApi {
 
   // Important: there is no hook which invalidates this endpoint,
   // Therefore, this data will live in cache until [defaultExpirationTimeInSeconds]
-  async getSingletons(): Promise<Raw<Singleton[]>> {
+  async getSingletons(): Promise<Raw<Array<Singleton>>> {
     try {
       const cacheDir = CacheRouter.getSingletonsCacheDir(this.chainId);
       const url = `${this.baseUrl}/api/v1/about/singletons/`;
-      return await this.dataSource.get<Singleton[]>({
+      return await this.dataSource.get<Array<Singleton>>({
         cacheDir,
         url,
         notFoundExpireTimeSeconds: this.defaultNotFoundExpirationTimeSeconds,
@@ -890,8 +890,8 @@ export class TransactionApi implements ITransactionApi {
 
   async postDeviceRegistration(args: {
     device: Device;
-    safes: string[];
-    signatures: string[];
+    safes: Array<string>;
+    signatures: Array<string>;
   }): Promise<void> {
     try {
       const url = `${this.baseUrl}/api/v1/notifications/devices/`;

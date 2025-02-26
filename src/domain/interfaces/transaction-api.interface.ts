@@ -1,7 +1,7 @@
 import type { Backbone } from '@/domain/backbone/entities/backbone.entity';
 import type { Singleton } from '@/domain/chains/entities/singleton.entity';
 import type { Contract } from '@/domain/contracts/entities/contract.entity';
-import type { DataDecoded } from '@/domain/data-decoder/entities/data-decoded.entity';
+import type { DataDecoded } from '@/domain/data-decoder/v1/entities/data-decoded.entity';
 import type { Delegate } from '@/domain/delegate/entities/delegate.entity';
 import type { Page } from '@/domain/entities/page.entity';
 import type { Estimation } from '@/domain/estimations/entities/estimation.entity';
@@ -29,7 +29,7 @@ export interface ITransactionApi {
 
   getBackbone(): Promise<Raw<Backbone>>;
 
-  getSingletons(): Promise<Raw<Singleton[]>>;
+  getSingletons(): Promise<Raw<Array<Singleton>>>;
 
   getIndexingStatus(): Promise<Raw<IndexingStatus>>;
 
@@ -200,8 +200,8 @@ export interface ITransactionApi {
 
   postDeviceRegistration(args: {
     device: Device;
-    safes: string[];
-    signatures: string[];
+    safes: Array<string>;
+    signatures: Array<string>;
   }): Promise<void>;
 
   deleteDeviceRegistration(uuid: string): Promise<void>;

@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import type { INestApplication } from '@nestjs/common';
 import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
-import { omit } from 'lodash';
+import omit from 'lodash/omit';
 import request from 'supertest';
 import { TestAppProvider } from '@/__tests__/test-app.provider';
 import { TestCacheModule } from '@/datasources/cache/__tests__/test.cache.module';
@@ -82,7 +82,7 @@ describe('Estimations Controller (Unit)', () => {
       const chain = chainBuilder().build();
       const safe = safeBuilder().build();
       const estimation = estimationBuilder().build();
-      const lastTransaction = multisigTransactionBuilder().build();
+      const lastTransaction = (await multisigTransactionBuilder()).build();
       networkService.get.mockImplementation(({ url }) => {
         const chainsUrl = `${safeConfigUrl}/api/v1/chains/${chain.chainId}`;
         const getSafeUrl = `${chain.transactionService}/api/v1/safes/${safe.address}`;
@@ -136,7 +136,7 @@ describe('Estimations Controller (Unit)', () => {
     const chain = chainBuilder().build();
     const safe = safeBuilder().build();
     const estimation = { invalid: 'value' };
-    const lastTransaction = multisigTransactionBuilder().build();
+    const lastTransaction = (await multisigTransactionBuilder()).build();
     networkService.get.mockImplementation(({ url }) => {
       const chainsUrl = `${safeConfigUrl}/api/v1/chains/${chain.chainId}`;
       const getSafeUrl = `${chain.transactionService}/api/v1/safes/${safe.address}`;
@@ -177,11 +177,8 @@ describe('Estimations Controller (Unit)', () => {
         data: faker.string.hexadecimal({ length: 32 }),
         operation: 0,
       })
-      .expect(500)
-      .expect({
-        statusCode: 500,
-        message: 'Internal server error',
-      });
+      .expect(502)
+      .expect({ statusCode: 502, message: 'Bad gateway' });
   });
 
   it('Should get a validation error', async () => {
@@ -215,7 +212,7 @@ describe('Estimations Controller (Unit)', () => {
       .with('nonce', faker.number.int({ max: 50 }))
       .build();
     const estimation = estimationBuilder().build();
-    const lastTransaction = multisigTransactionBuilder()
+    const lastTransaction = (await multisigTransactionBuilder())
       .with('nonce', faker.number.int({ min: 51 }))
       .build();
     networkService.get.mockImplementation(({ url }) => {
@@ -325,7 +322,7 @@ describe('Estimations Controller (Unit)', () => {
     const chain = chainBuilder().build();
     const safe = safeBuilder().with('nonce', faker.number.int()).build();
     const estimation = estimationBuilder().build();
-    const lastTransaction = multisigTransactionBuilder()
+    const lastTransaction = (await multisigTransactionBuilder())
       .with('nonce', faker.number.int({ max: safe.nonce }))
       .build();
     networkService.get.mockImplementation(({ url }) => {

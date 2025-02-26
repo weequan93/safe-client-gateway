@@ -38,7 +38,7 @@ import { ILoggingService, LoggingService } from '@/logging/logging.interface';
 import { rawify, type Raw } from '@/validation/entities/raw.entity';
 import { Inject, Injectable } from '@nestjs/common';
 import { getAddress } from 'viem';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 
 export const IZerionBalancesApi = Symbol('IZerionBalancesApi');
 
@@ -51,7 +51,7 @@ export class ZerionBalancesApi implements IBalancesApi {
   private readonly chainsConfiguration: Record<number, ChainAttributes>;
   private readonly defaultExpirationTimeInSeconds: number;
   private readonly defaultNotFoundExpirationTimeSeconds: number;
-  private readonly fiatCodes: string[];
+  private readonly fiatCodes: Array<string>;
   // Number of seconds for each rate-limit cycle
   private readonly limitPeriodSeconds: number;
   // Number of allowed calls on each rate-limit cycle
@@ -83,7 +83,7 @@ export class ZerionBalancesApi implements IBalancesApi {
       Record<number, ChainAttributes>
     >('balances.providers.zerion.chains');
     this.fiatCodes = this.configurationService
-      .getOrThrow<string[]>('balances.providers.zerion.currencies')
+      .getOrThrow<Array<string>>('balances.providers.zerion.currencies')
       .map((currency) => currency.toUpperCase());
     this.limitPeriodSeconds = configurationService.getOrThrow(
       'balances.providers.zerion.limitPeriodSeconds',
@@ -97,7 +97,7 @@ export class ZerionBalancesApi implements IBalancesApi {
     chain: Chain;
     safeAddress: `0x${string}`;
     fiatCode: string;
-  }): Promise<Raw<Balance[]>> {
+  }): Promise<Raw<Array<Balance>>> {
     if (!this.fiatCodes.includes(args.fiatCode.toUpperCase())) {
       throw new DataSourceError(
         `Unsupported currency code: ${args.fiatCode}`,
@@ -147,7 +147,7 @@ export class ZerionBalancesApi implements IBalancesApi {
       );
       return this._mapBalances(chainName, zerionBalances.data);
     } catch (error) {
-      if (error instanceof LimitReachedError) {
+      if (error instanceof LimitReachedError || error instanceof ZodError) {
         throw error;
       }
       throw this.httpErrorFactory.from(error);
@@ -210,6 +210,9 @@ export class ZerionBalancesApi implements IBalancesApi {
           zerionCollectibles.data,
         );
       } catch (error) {
+        if (error instanceof ZodError) {
+          throw error;
+        }
         throw this.httpErrorFactory.from(error);
       }
     }
@@ -225,8 +228,8 @@ export class ZerionBalancesApi implements IBalancesApi {
 
   private _mapBalances(
     chainName: string,
-    zerionBalances: ZerionBalance[],
-  ): Raw<Balance[]> {
+    zerionBalances: Array<ZerionBalance>,
+  ): Raw<Array<Balance>> {
     const balances = zerionBalances
       .filter((zb) => zb.attributes.flags.displayable)
       .map((zb) => {
@@ -252,7 +255,7 @@ export class ZerionBalancesApi implements IBalancesApi {
     return rawify(balances);
   }
 
-  async getFiatCodes(): Promise<Raw<string[]>> {
+  async getFiatCodes(): Promise<Raw<Array<string>>> {
     // Resolving to conform with interface
     return Promise.resolve(rawify(this.fiatCodes));
   }
@@ -307,7 +310,7 @@ export class ZerionBalancesApi implements IBalancesApi {
 
   private _buildCollectiblesPage(
     next: string | null,
-    data: ZerionCollectible[],
+    data: Array<ZerionCollectible>,
   ): Raw<Page<Collectible>> {
     // Zerion does not provide the items count.
     // Zerion does not provide a "previous" cursor.
@@ -320,8 +323,8 @@ export class ZerionBalancesApi implements IBalancesApi {
   }
 
   private _mapCollectibles(
-    zerionCollectibles: ZerionCollectible[],
-  ): Collectible[] {
+    zerionCollectibles: Array<ZerionCollectible>,
+  ): Array<Collectible> {
     return zerionCollectibles.map(
       ({ attributes: { nft_info, collection_info } }) => ({
         address: nft_info.contract_address,
